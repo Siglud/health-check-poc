@@ -99,6 +99,8 @@ resource functionApp 'Microsoft.Web/sites@2021-02-01' = {
         }
       ]
       ftpsState: 'FtpsOnly'
+      // Health check can be enabled for Free and Shared App Service Plans so you can have metrics on the site's health and setup alerts, but because Free and Shared sites can't scale out, any unhealthy instances won't be replaced. You should scale up to the Basic tier or higher so you can scale out to 2 or more instances and utilize the full benefit of Health check. This is recommended for production-facing applications as it will increase your app's availability and performance.
+      healthCheckPath: '/api/health'
     }
   }
 }
