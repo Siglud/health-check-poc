@@ -16,3 +16,7 @@ appPackage/build
 
 # Dev tool directories
 /devTools/
+
+env/.env.dev
+infra/azure.parameters.json
+package-lock.json
