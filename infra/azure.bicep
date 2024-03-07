@@ -18,7 +18,6 @@ var outlookDesktopAppClientId = 'd3590ed6-52b3-4102-aeff-aad2292ab01c'
 var outlookWebAppClientId = '00000002-0000-0ff1-ce00-000000000000'
 var officeUwpPwaClientId = '0ec893e0-5785-4de6-99da-4ed124e5296c'
 var outlookOnlineAddInAppClientId = 'bc59ab01-8403-45c6-8796-ac3ef710b3e3'
-var allowedClientApplications = '"${teamsMobileOrDesktopAppClientId}","${teamsWebAppClientId}","${officeWebAppClientId1}","${officeWebAppClientId2}","${outlookDesktopAppClientId}","${outlookWebAppClientId}","${officeUwpPwaClientId}","${outlookOnlineAddInAppClientId}"'
 
 // Azure Static Web Apps that hosts your static web site
 resource swa 'Microsoft.Web/staticSites@2022-09-01' = {
@@ -29,7 +28,7 @@ resource swa 'Microsoft.Web/staticSites@2022-09-01' = {
     name: staticWebAppSku
     tier: staticWebAppSku
   }
-  properties:{}
+  properties: {}
 }
 
 var siteDomain = swa.properties.defaultHostname
@@ -98,10 +97,6 @@ resource functionApp 'Microsoft.Web/sites@2021-02-01' = {
           name: 'M365_APPLICATION_ID_URI'
           value: aadApplicationIdUri
         }
-        {
-          name: 'WEBSITE_AUTH_AAD_ACL'
-          value: '{"allowed_client_applications": [${allowedClientApplications}]}'
-        }
       ]
       ftpsState: 'FtpsOnly'
     }
@@ -109,18 +104,62 @@ resource functionApp 'Microsoft.Web/sites@2021-02-01' = {
 }
 var apiEndpoint = 'https://${functionApp.properties.defaultHostName}'
 
-resource authSettings 'Microsoft.Web/sites/config@2021-02-01' = {
+resource authSettings 'Microsoft.Web/sites/config@2022-09-01' = {
   parent: functionApp
-  name: 'authsettings'
+  name: 'authsettingsV2'
   properties: {
-    enabled: true
-    defaultProvider: 'AzureActiveDirectory'
-    clientId: aadAppClientId
-    issuer: '${oauthAuthority}/v2.0'
-    allowedAudiences: [
-      aadAppClientId
-      aadApplicationIdUri
-    ]
+    platform: {
+      enabled: true
+    }
+    globalValidation: {
+      excludedPaths: [
+        '/api/health'
+      ]
+      redirectToProvider: 'Microsoft'
+      requireAuthentication: true
+      unauthenticatedClientAction: 'Return403'
+    }
+    identityProviders: {
+      azureActiveDirectory: {
+        enabled: true
+        registration: {
+          clientId: aadAppClientId
+          clientSecretSettingName: 'M365_CLIENT_SECRET'
+          openIdIssuer: '${oauthAuthority}/v2.0'
+        }
+        validation: {
+          defaultAuthorizationPolicy: {
+            allowedApplications: [ teamsMobileOrDesktopAppClientId
+              teamsWebAppClientId
+              officeWebAppClientId1
+              officeWebAppClientId2
+              outlookDesktopAppClientId
+              outlookWebAppClientId
+              officeUwpPwaClientId
+              outlookOnlineAddInAppClientId ]
+          }
+          jwtClaimChecks: {
+            allowedClientApplications: [ teamsMobileOrDesktopAppClientId
+              teamsWebAppClientId
+              officeWebAppClientId1
+              officeWebAppClientId2
+              outlookDesktopAppClientId
+              outlookWebAppClientId
+              officeUwpPwaClientId
+              outlookOnlineAddInAppClientId ]
+          }
+          allowedAudiences: [
+            aadAppClientId
+            aadApplicationIdUri
+          ]
+        }
+      }
+    }
+    login: {
+      tokenStore: {
+        enabled: true
+      }
+    }
   }
 }
 
